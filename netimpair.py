@@ -69,8 +69,7 @@ class NetemInstance(object):
                     token_split = token.split("=")
                     key = token_split[0]
                     value = token_split[1]
-                    # Check for ipv6 addresses and add them to the appropriate
-                    # filter string
+                    # Check for ipv6 addresses and add them to the appropriate filter string
                     if key == "src" or key == "dst":
                         if "::" in value:
                             filter_string_ipv6 += f"match ip6 {key} {value} "
@@ -104,9 +103,8 @@ class NetemInstance(object):
             self._check_call(f"tc qdisc replace dev {self.real_nic} ingress")
             # Add filter to redirect ingress to virtual ifb device
             self._check_call(
-                f"tc filter replace dev {self.real_nic} parent ffff: protocol ip prio 1 "
-                f"u32 match u32 0 0 flowid 1:1 action mirred egress redirect "
-                f"dev {self.nic}"
+                f"tc filter replace dev {self.real_nic} parent ffff: protocol ip prio 1 u32 match u32 0 0 flowid 1:1 action "
+                f"mirred egress redirect dev {self.nic}"
             )
 
         # Delete network impairments from any previous runs of this script
@@ -119,16 +117,14 @@ class NetemInstance(object):
         print("Including the following for network impairment:")
         include_filters, include_filters_ipv6 = self._generate_filters(self.include)
         for filter_string in include_filters:
-            include_filter = (
-                f"tc filter add dev {self.nic} protocol ip parent 1:0 "
-                f"prio 3 u32 {filter_string}flowid 1:3"
-            )
+            include_filter = f"tc filter add dev {self.nic} protocol ip parent 1:0 prio 3 u32 {filter_string}flowid 1:3"
             print(include_filter)
             self._check_call(include_filter)
 
         for filter_string_ipv6 in include_filters_ipv6:
             include_filter_ipv6 = (
-                f"tc filter add dev {self.nic} protocol ipv6 parent 1:0 prio 4 u32 {filter_string_ipv6}flowid 1:3"
+                f"tc filter add dev {self.nic} protocol ipv6 parent 1:0 prio 4 u32"
+                f" {filter_string_ipv6}flowid 1:3"
             )
             print(include_filter_ipv6)
             self._check_call(include_filter_ipv6)
@@ -137,16 +133,12 @@ class NetemInstance(object):
         print("Excluding the following from network impairment:")
         exclude_filters, exclude_filters_ipv6 = self._generate_filters(self.exclude)
         for filter_string in exclude_filters:
-            exclude_filter = (
-                f"tc filter add dev {self.nic} protocol ip parent 1:0 prio 1 u32 {filter_string}flowid 1:2"
-            )
+            exclude_filter = f"tc filter add dev {self.nic} protocol ip parent 1:0 prio 1 u32 {filter_string}flowid 1:2"
             print(exclude_filter)
             self._check_call(exclude_filter)
 
         for filter_string_ipv6 in exclude_filters_ipv6:
-            exclude_filter_ipv6 = (
-                f"tc filter add dev {self.nic} protocol ipv6 parent 1:0 prio 2 u32 {filter_string_ipv6}flowid 1:2"
-            )
+            exclude_filter_ipv6 = f"tc filter add dev {self.nic} protocol ipv6 parent 1:0 prio 2 u32 {filter_string_ipv6}flowid 1:2"
             print(exclude_filter_ipv6)
             self._check_call(exclude_filter_ipv6)
         print()
@@ -167,9 +159,7 @@ class NetemInstance(object):
         """Enable packet loss."""
         if toggle is None:
             toggle = [1000000]
-        self._check_call(
-            f"tc qdisc add dev {self.nic} parent 1:3 handle 30: netem"
-        )
+        self._check_call(f"tc qdisc add dev {self.nic} parent 1:3 handle 30: netem")
         while toggle:
             impair_cmd = (
                 f"tc qdisc change dev {self.nic} parent 1:3 handle 30: netem loss {loss_ratio}% {loss_corr}% duplicate"
